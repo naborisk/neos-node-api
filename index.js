@@ -8,22 +8,24 @@ let READY = false
 
 const options = {
   pythonOptions: ['-u', '-i']
-
 }
 
 const neos = new PythonShell('api.py', options)
 
 console.log('starting...')
 
-//neos.send('users\n')
-
 neos.on('message', message => {
-  console.log(message)
-  if(message == 'READY') READY = true
+  if(message == 'READY') {
+    console.log('Neos headless session is ready')
+    READY = true
+  } else {
+    //console.log(message)
+  }
 })
 
 const get = (path, pythonCommand) => {
   app.get(path, (req, res) => {
+    console.log(`get ${path} from ${req.ip}` + (READY ? `` : ` (not ready)`))
     
     if(READY) {
     new Promise((resolve, reject) => {
@@ -45,31 +47,7 @@ const get = (path, pythonCommand) => {
 get('/sessionid', 'hc.session_id()')
 get('/users', 'hc.users()')
 get('/worlds', 'hc.worlds()')
-
-app.get('/status', (req, res) => {
-  //res.set('Content-Type', 'application/json')
-
-  new Promise((resolve, reject) => {
-    neos.send('json.dumps(hc.status())')
-
-    neos.once('message', message => {
-      resolve(message.replaceAll("'", ''))
-    })
-
-  }).then(result => {
-    res.send(JSON.parse(result))
-  })
-})
-
-/*app.get('/users', (req, res) => {
-  new Promise((resolve, reject) => {
-    neos.send('hc.users()')
-
-    neos.on('message', message => {resolve(message)})
-  }).then(result => {
-    res.send(result)
-  })
-})*/
+get('/status', 'hc.status()')
 
 app.listen(PORT, () => {
   console.log(`Running on ${PORT}`)
